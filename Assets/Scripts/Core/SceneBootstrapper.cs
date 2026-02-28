@@ -16,12 +16,28 @@ namespace Unstack.Core
         private static GameConfig _config;
         private static Transform _canvasTransform;
 
+        // Procedural sprite cache
+        private static Sprite _heartSprite;
+        private static Sprite _roundedRectSprite;
+        private static Sprite _playTriangleSprite;
+        private static Sprite _gearSprite;
+        private static Sprite _pauseBarsSprite;
+        private static Sprite _arrowDownSprite;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Bootstrap()
         {
             if (GameManager.Instance != null) return;
 
             _config = ScriptableObject.CreateInstance<GameConfig>();
+
+            // Generate procedural sprites
+            _heartSprite = ProceduralSpriteFactory.CreateHeart();
+            _roundedRectSprite = ProceduralSpriteFactory.CreateRoundedRect(64, 64, 16);
+            _playTriangleSprite = ProceduralSpriteFactory.CreatePlayTriangle();
+            _gearSprite = ProceduralSpriteFactory.CreateGear();
+            _pauseBarsSprite = ProceduralSpriteFactory.CreatePauseBars();
+            _arrowDownSprite = ProceduralSpriteFactory.CreateArrowDown();
 
             BootstrapCore();
             var canvas = BootstrapCanvas();
@@ -164,6 +180,7 @@ namespace Unstack.Core
                 var heartRT = heartGO.AddComponent<RectTransform>();
                 heartRT.sizeDelta = new Vector2(60, 60);
                 var heartImg = heartGO.AddComponent<Image>();
+                heartImg.sprite = _heartSprite;
                 heartImg.color = new Color(0.91f, 0.30f, 0.24f);
                 heartImages[i] = heartImg;
             }
@@ -277,6 +294,7 @@ namespace Unstack.Core
             var gameOverPanelGO = CreatePanel(_canvasTransform, "GameOverPanel", "Game Over");
             var gameOverPanel = gameOverPanelGO.AddComponent<GameOverPanel>();
             var retryBtn = CreateButton(gameOverPanelGO.transform, "RetryButton", "Retry", 0.25f);
+            ApplyRoundedRect(retryBtn.GetComponent<Image>());
             retryBtn.GetComponent<Image>().color = new Color(0.18f, 0.78f, 0.44f);
             var retryBtnRT = retryBtn.GetComponent<RectTransform>();
             retryBtnRT.sizeDelta = new Vector2(350, 90);
@@ -318,6 +336,7 @@ namespace Unstack.Core
             var levelClearPanelGO = CreatePanel(_canvasTransform, "LevelClearPanel", "Level Clear!");
             var levelClearPanel = levelClearPanelGO.AddComponent<LevelClearPanel>();
             var nextBtn = CreateButton(levelClearPanelGO.transform, "NextButton", "Next", 0.35f);
+            ApplyRoundedRect(nextBtn.GetComponent<Image>());
             InjectPanelFields(levelClearPanel, levelClearPanelGO, nextBtn, "titleText", "nextButton");
             levelClearPanelGO.SetActive(false);
 
@@ -402,17 +421,21 @@ namespace Unstack.Core
             var playBtn = CreateButton(menuGO.transform, "PlayButton", "PLAY", 0.40f);
             var playBtnRT = playBtn.GetComponent<RectTransform>();
             playBtnRT.sizeDelta = new Vector2(400, 100);
+            ApplyRoundedRect(playBtn.GetComponent<Image>());
             playBtn.GetComponent<Image>().color = new Color(0.18f, 0.78f, 0.44f);
             var playLabel = playBtn.transform.Find("Label")?.GetComponent<TextMeshProUGUI>();
             if (playLabel != null) playLabel.fontSize = 52;
+            AddLeftIcon(playBtn.gameObject, "PlayIcon", _playTriangleSprite, 36, 20);
 
             // Settings button (smaller, subtle)
             var settingsBtn = CreateButton(menuGO.transform, "SettingsButton", "Settings", 0.28f);
             var settingsBtnRT = settingsBtn.GetComponent<RectTransform>();
-            settingsBtnRT.sizeDelta = new Vector2(240, 60);
+            settingsBtnRT.sizeDelta = new Vector2(280, 70);
+            ApplyRoundedRect(settingsBtn.GetComponent<Image>());
             settingsBtn.GetComponent<Image>().color = new Color(0.4f, 0.4f, 0.5f);
             var settingsLabel = settingsBtn.transform.Find("Label")?.GetComponent<TextMeshProUGUI>();
             if (settingsLabel != null) settingsLabel.fontSize = 32;
+            AddLeftIcon(settingsBtn.gameObject, "GearIcon", _gearSprite, 28, 16);
 
             var mainMenuPanel = menuGO.AddComponent<MainMenuPanel>();
             typeof(MainMenuPanel).GetField("titleText", Flags).SetValue(mainMenuPanel, titleTMP);
@@ -455,6 +478,7 @@ namespace Unstack.Core
 
             // Close button
             var closeBtn = CreateButton(settingsGO.transform, "CloseButton", "Close", 0.30f);
+            ApplyRoundedRect(closeBtn.GetComponent<Image>());
 
             var settingsPanel = settingsGO.AddComponent<SettingsPanel>();
             typeof(SettingsPanel).GetField("sfxSlider", Flags).SetValue(settingsPanel, sfxSlider);
@@ -491,7 +515,7 @@ namespace Unstack.Core
             instrTMP.color = Color.white;
             instrTMP.raycastTarget = false;
 
-            // Arrow indicator
+            // Arrow indicator (sprite-based)
             var arrowGO = new GameObject("Arrow");
             arrowGO.transform.SetParent(tutGO.transform, false);
             var arrowRT = arrowGO.AddComponent<RectTransform>();
@@ -500,12 +524,10 @@ namespace Unstack.Core
             arrowRT.pivot = new Vector2(0.5f, 0.5f);
             arrowRT.anchoredPosition = Vector2.zero;
             arrowRT.sizeDelta = new Vector2(60, 60);
-            var arrowTMP = arrowGO.AddComponent<TextMeshProUGUI>();
-            arrowTMP.text = "\u2193"; // down arrow
-            arrowTMP.fontSize = 60;
-            arrowTMP.alignment = TextAlignmentOptions.Center;
-            arrowTMP.color = Color.white;
-            arrowTMP.raycastTarget = false;
+            var arrowImg = arrowGO.AddComponent<Image>();
+            arrowImg.sprite = _arrowDownSprite;
+            arrowImg.color = Color.white;
+            arrowImg.raycastTarget = false;
 
             var tutorialOverlay = tutGO.AddComponent<TutorialOverlay>();
             typeof(TutorialOverlay).GetField("overlayBackground", Flags).SetValue(tutorialOverlay, tutBg);
@@ -524,22 +546,23 @@ namespace Unstack.Core
             pauseBtnRT.sizeDelta = new Vector2(80, 80);
 
             var pauseBtnImg = pauseBtnGO.AddComponent<Image>();
+            pauseBtnImg.sprite = _roundedRectSprite;
+            pauseBtnImg.type = Image.Type.Sliced;
             pauseBtnImg.color = new Color(1, 1, 1, 0.3f);
             var pauseBtnComp = pauseBtnGO.AddComponent<Button>();
             pauseBtnComp.targetGraphic = pauseBtnImg;
 
-            var pauseLabelGO = new GameObject("Label");
-            pauseLabelGO.transform.SetParent(pauseBtnGO.transform, false);
-            var pauseLabelRT = pauseLabelGO.AddComponent<RectTransform>();
-            pauseLabelRT.anchorMin = Vector2.zero;
-            pauseLabelRT.anchorMax = Vector2.one;
-            pauseLabelRT.offsetMin = Vector2.zero;
-            pauseLabelRT.offsetMax = Vector2.zero;
-            var pauseLabelTMP = pauseLabelGO.AddComponent<TextMeshProUGUI>();
-            pauseLabelTMP.text = "||";
-            pauseLabelTMP.fontSize = 36;
-            pauseLabelTMP.alignment = TextAlignmentOptions.Center;
-            pauseLabelTMP.color = Color.white;
+            var pauseIconGO = new GameObject("PauseIcon");
+            pauseIconGO.transform.SetParent(pauseBtnGO.transform, false);
+            var pauseIconRT = pauseIconGO.AddComponent<RectTransform>();
+            pauseIconRT.anchorMin = Vector2.zero;
+            pauseIconRT.anchorMax = Vector2.one;
+            pauseIconRT.offsetMin = new Vector2(16, 16);
+            pauseIconRT.offsetMax = new Vector2(-16, -16);
+            var pauseIconImg = pauseIconGO.AddComponent<Image>();
+            pauseIconImg.sprite = _pauseBarsSprite;
+            pauseIconImg.color = Color.white;
+            pauseIconImg.raycastTarget = false;
 
             // Pause panel
             var pausePanelGO = new GameObject("PausePanel");
@@ -568,7 +591,9 @@ namespace Unstack.Core
             pauseTitleTMP.color = Color.white;
 
             var resumeBtn = CreateButton(pausePanelGO.transform, "ResumeButton", "Resume", 0.45f);
+            ApplyRoundedRect(resumeBtn.GetComponent<Image>());
             var pSettingsBtn = CreateButton(pausePanelGO.transform, "PauseSettingsButton", "Settings", 0.35f);
+            ApplyRoundedRect(pSettingsBtn.GetComponent<Image>());
             pausePanelGO.SetActive(false);
 
             var pauseButton = pauseBtnGO.AddComponent<PauseButton>();
@@ -776,6 +801,29 @@ namespace Unstack.Core
             slider.value = 1f;
 
             return slider;
+        }
+
+        private static void ApplyRoundedRect(Image img)
+        {
+            img.sprite = _roundedRectSprite;
+            img.type = Image.Type.Sliced;
+        }
+
+        private static void AddLeftIcon(GameObject parent, string name, Sprite sprite,
+            float iconSize, float padding)
+        {
+            var iconGO = new GameObject(name);
+            iconGO.transform.SetParent(parent.transform, false);
+            var rt = iconGO.AddComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0, 0.5f);
+            rt.anchorMax = new Vector2(0, 0.5f);
+            rt.pivot = new Vector2(0, 0.5f);
+            rt.anchoredPosition = new Vector2(padding, 0);
+            rt.sizeDelta = new Vector2(iconSize, iconSize);
+            var img = iconGO.AddComponent<Image>();
+            img.sprite = sprite;
+            img.color = Color.white;
+            img.raycastTarget = false;
         }
 
         private static void InjectPanelFields(Component panel, GameObject panelGO, Button button,
