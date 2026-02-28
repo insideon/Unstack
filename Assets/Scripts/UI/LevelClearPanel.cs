@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using Unstack.Core;
+using Unstack.Audio;
 
 namespace Unstack.UI
 {
@@ -10,7 +11,7 @@ namespace Unstack.UI
         [SerializeField] private TextMeshProUGUI titleText;
         [SerializeField] private Button nextButton;
 
-        private void Awake()
+        private void Start()
         {
             if (nextButton != null)
                 nextButton.onClick.AddListener(OnNext);
@@ -24,6 +25,7 @@ namespace Unstack.UI
 
         private void OnNext()
         {
+            AudioManager.Instance?.PlayButtonClick();
             gameObject.SetActive(false);
             GameManager.Instance.NextLevel();
         }

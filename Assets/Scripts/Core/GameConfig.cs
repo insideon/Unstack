@@ -41,6 +41,14 @@ namespace Unstack.Core
         public float shakeDuration = 0.4f;
         public float shakeIntensity = 0.15f;
 
+        [Header("Background")]
+        public Color backgroundTopColor = new Color(0.1f, 0.1f, 0.3f);
+        public Color backgroundBottomColor = new Color(0.2f, 0.1f, 0.3f);
+
+        [Header("Screen Effects")]
+        public float screenFlashDuration = 0.3f;
+        public float levelTransitionDuration = 0.5f;
+
         public int GetShapeCount(int level)
         {
             return baseShapeCount + (level - 1) * shapesPerLevelIncrease;
